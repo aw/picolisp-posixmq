@@ -11,15 +11,27 @@
 
 (setq
   *Librt              "librt.so"
-  *PMQ_verbose        T
-  *PMQ_maxmsg         (in "/proc/sys/fs/mqueue/msg_default" (read))
-  *PMQ_msgsize        (in "/proc/sys/fs/mqueue/msgsize_default" (read))
-  *PMQ_os_msg_max     (in "/proc/sys/fs/mqueue/msg_max" (read))
-  *PMQ_os_msgsize_max (in "/proc/sys/fs/mqueue/msgsize_max" (read))
-  *PMQ_os_queues_max  (in "/proc/sys/fs/mqueue/queues_max" (read))
-  O_CLOEXEC           (hex "80000") )   # Linux
-  #O_CLOEXEC           (hex "100000") ) # FreeBSD
-  #O_CLOEXEC           (hex "10000") )  # OpenBSD
+  *PMQ_verbose        T )
+
+(case *OS
+  ("Linux"
+    (setq
+      *PMQ_maxpriority    32767
+      *PMQ_maxmsg         (in "/proc/sys/fs/mqueue/msg_default" (read))
+      *PMQ_msgsize        (in "/proc/sys/fs/mqueue/msgsize_default" (read))
+      *PMQ_os_msg_max     (in "/proc/sys/fs/mqueue/msg_max" (read))
+      *PMQ_os_msgsize_max (in "/proc/sys/fs/mqueue/msgsize_max" (read))
+      *PMQ_os_queues_max  (in "/proc/sys/fs/mqueue/queues_max" (read))
+      O_CLOEXEC           (hex "80000") ) )
+  ("FreeBSD"
+    (setq
+      *PMQ_maxpriority    63
+      *PMQ_maxmsg         10
+      *PMQ_msgsize        1024
+      *PMQ_os_msg_max     100
+      *PMQ_os_msgsize_max 16384
+      *PMQ_os_queues_max  256
+      O_CLOEXEC           (hex "100000") ]
 
 ###
 # HELPERS
