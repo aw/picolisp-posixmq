@@ -37,13 +37,18 @@
 # HELPERS
 ###
 
-(de pmq-get-sysdef (N)
-  (set (any N) (in '("@src64/sysdefs") (from N) (read) ]
+# source: pil21.tgz 'lib.l'
+(de pmq-sysdefs ("Sym" "Alt")
+ (in "Alt"
+    (if (from (pack "\n[" "Sym" "]\n"))
+       (while (and (skip) (<> "[" @))
+          (def (read) (read)) )
+       (quit "No sysdefs" "Sym") ) ) )
 
 (de pmq-set-constants ()
   (if (> (version T) (21)) # test for pil21 VS pil64
       (sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS)))
-      (mapcar pmq-get-sysdef '("O_RDONLY" "O_WRONLY" "O_RDWR" "O_CREAT" "O_EXCL" "O_NONBLOCK") ]
+      (pmq-sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS))) ) )
 
 (de pmq-output @
   (when *PMQ_verbose (prinl "[" (dat$ (date) "-") "T" (tim$ (time) T) "] " (rest) ]
