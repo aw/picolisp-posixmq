@@ -1,6 +1,6 @@
 # picolisp-posixmq - https://github.com/aw/picolisp-posixmq
 #
-# Library for working with POSIX Message Queues in PicoLisp (64-bit only)
+# POSIX Message Queues library for PicoLisp (64-bit only)
 #
 # The MIT License (MIT)
 # Copyright (c) 2020 Alexander Williams, On-Prem <license@on-premises.com>
@@ -19,9 +19,9 @@
       *PMQ_maxpriority    32767
       *PMQ_maxmsg         (in "/proc/sys/fs/mqueue/msg_default" (read))
       *PMQ_msgsize        (in "/proc/sys/fs/mqueue/msgsize_default" (read))
-      *PMQ_os_msg_max     (in "/proc/sys/fs/mqueue/msg_max" (read))
-      *PMQ_os_msgsize_max (in "/proc/sys/fs/mqueue/msgsize_max" (read))
-      *PMQ_os_queues_max  (in "/proc/sys/fs/mqueue/queues_max" (read))
+      *PMQ_os_msg_max     "/proc/sys/fs/mqueue/msg_max"
+      *PMQ_os_msgsize_max "/proc/sys/fs/mqueue/msgsize_max"
+      *PMQ_os_queues_max  "/proc/sys/fs/mqueue/queues_max"
       O_CLOEXEC           (hex "80000") ) )
   ("FreeBSD"
     (setq
@@ -46,9 +46,7 @@
        (quit "No sysdefs" "Sym") ) ) )
 
 (de pmq-set-constants ()
-  (if (> (version T) (21)) # test for pil21 VS pil64
-      (sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS)))
-      (pmq-sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS))) ) )
+  (pmq-sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS))) )
 
 (de pmq-output @
   (when *PMQ_verbose (prinl "[" (dat$ (date) "-") "T" (tim$ (time) T) "] " (rest) ]
@@ -106,10 +104,9 @@
     (pmq-return Res Res "Unlinked queue: Name='" Name "'") ]
 
 (de pmq-getattr (Fd)
-  (let (Attr    NIL
-        Res     (native `*Librt "mq_getattr" 'I Fd (list 'Attr (64 N . 4) 0)) )
-
-    (pmq-return Res Attr "Get attributes: Flags=" (car Attr) ", Maxmsg=" (; Attr 2) ", Msgsize=" (; Attr 3) ", Curmsgs=" (last Attr) ", FD=" Fd) ]
+  (use Attr
+    (let Res (native `*Librt "mq_getattr" 'I Fd (list 'Attr (64 N . 4) 0))
+      (pmq-return Res Attr "Get attributes: Flags=" (car Attr) ", Maxmsg=" (; Attr 2) ", Msgsize=" (; Attr 3) ", Curmsgs=" (last Attr) ", FD=" Fd) ]
 
 (de pmq-setattr (Fd Nonblock)
   (let (Mem     (pmq-mem 32)
@@ -122,8 +119,8 @@
 (de pmq-send (Fd Msg Prio)
   (default Prio 0)
 
-  (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (length Msg) 1) Prio)
-    (pmq-return Res Res "Send: String='" Msg "', FD=" Fd) ]
+  (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (size Msg) 1) Prio)
+    (pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
 
 (de pmq-timedsend (Fd Msg Prio Seconds)
   (default Prio 0)
@@ -132,16 +129,17 @@
   (let (Mem     (pmq-mem 16)
         Timeout (+ Seconds (native "@" "time" 'N 0))
         Time    (struct Mem 'N (cons Timeout 8) (0 . 8))
-        Res     (native `*Librt "mq_timedsend" 'I Fd Msg (+ (length Msg) 1) Prio Mem) )
+        Res     (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Mem) )
 
     (pmq-free Mem)
-    (pmq-return Res Res "Timed send: String='" Msg "', FD=" Fd) ]
+    (pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
 
 (de pmq-receive (Fd)
   (let (Size    (caddr (pmq-getattr Fd))
         Msg     (pmq-mem Size)
+        Buf     (struct Msg 'S (0 . Size))
         Res     (native `*Librt "mq_receive" 'I Fd Msg Size 0)
-        Str     (native "@" "strdup" 'S Msg) )
+        Str     (struct Msg 'S) )
 
     (pmq-free Msg)
     (pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
@@ -152,10 +150,11 @@
   (let (Size    (caddr (pmq-getattr Fd))
         Msg     (pmq-mem Size)
         Mem     (pmq-mem 16)
+        Buf     (struct Msg 'S (0 . Size))
         Timeout (+ Seconds (native "@" "time" 'N 0))
         Time    (struct Mem 'N (cons Timeout 8) (0 . 8))
         Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Mem)
-        Str     (native "@" "strdup" 'S Msg) )
+        Str     (struct Msg 'S) )
 
     (pmq-free Msg)
     (pmq-free Mem)

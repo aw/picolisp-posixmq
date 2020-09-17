@@ -1,7 +1,7 @@
 [de APP_INFO
   ("name"      "picolisp-posixmq")
   ("version"   "0.1.0")
-  ("summary"   "Library for working with POSIX Message Queues in PicoLisp (64-bit only)")
+  ("summary"   "POSIX Message Queues library for PicoLisp (64-bit only)")
   ("source"    "https://github.com/aw/picolisp-posixmq")
   ("author"    "Alexander Williams")
   ("license"   "MIT")
