@@ -47,10 +47,10 @@
     (pmq-unlink "/___posixmq-tests2")
 
     (assert-throws 'pmq-error "Too many open files" '(for N (+ 1 (in *PMQ_os_msg_max (read))) (let Fd (pmq-open (pack "/___posixmq-tests-z" N) T T (list O_CREAT) "0600") (pmq-close Fd))) "[OPEN] Throws: Too many open files when there's too many queues with default attributes")
-    (chdir "/mnt/mqueue/"
+    (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-z" N)) (dir ".")) "rm" "-f") )
     (assert-throws 'pmq-error "No space left on device" '(for N (+ 1 (in *PMQ_os_queues_max (read))) (let Fd (pmq-open (pack "/___posixmq-tests-x" N) T T (list O_CREAT O_EXCL) "0600" 4 20) (pmq-close Fd))) "[OPEN] Throws: No space left on device when there's too many queues")
-    (chdir "/mnt/mqueue/"
+    (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-x" N)) (dir ".")) "rm" "-f") )
   ]
 
