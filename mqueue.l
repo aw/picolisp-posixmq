@@ -11,8 +11,7 @@
 
 (setq
   *Librt              "librt.so"
-  *PMQ_verbose        T
-  *PMQ_maxpriority    32767 )
+  *PMQ_verbose        T )
 
 ###
 # HELPERS
