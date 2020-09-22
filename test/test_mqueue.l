@@ -144,14 +144,19 @@
     (pmq-unlink "/___posixmq-tests5")
   ]
 
-(execute
-  '(test-constants)
-  '(test-types)
-  '(test-open)
-  '(test-close)
-  '(test-unlink)
-  '(test-getattr)
-  '(test-setattr)
-  '(test-send)
-  '(test-receive)
-  ]
+(catch T
+  (finally
+    (println *Msg)
+    (chdir "/dev/mqueue/"
+      (apply call (filter '((N) (pre? "___posixmq-tests" N)) (dir ".")) "rm" "-f") ) # cleanup first
+    (execute
+      '(test-constants)
+      '(test-types)
+      '(test-open)
+      '(test-close)
+      '(test-unlink)
+      '(test-getattr)
+      '(test-setattr)
+      '(test-send)
+      '(test-receive)
+    ]
