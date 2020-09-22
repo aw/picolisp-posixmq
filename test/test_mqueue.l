@@ -1,6 +1,12 @@
 # Tests for mqueue
 
-(off *PMQ_verbose)
+(setq
+  *PMQ_verbose        NIL
+  *PMQ_maxmsg         (cdr (pmq-getsettings "msg_default"))
+  *PMQ_msgsize        (cdr (pmq-getsettings "msgsize_default"))
+  *PMQ_os_msg_max     (cdr (pmq-getsettings "msg_max"))
+  *PMQ_os_msgsize_max (cdr (pmq-getsettings "msgsize_max"))
+  *PMQ_os_queues_max  (cdr (pmq-getsettings "queues_max")) )
 
 (de test-constants ()
   (assert-kind-of 'Number O_CLOEXEC "[CONSTANTS] Should validate O_CLOEXEC is a number")

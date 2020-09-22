@@ -11,27 +11,8 @@
 
 (setq
   *Librt              "librt.so"
-  *PMQ_verbose        T )
-
-(case *OS
-  ("Linux"
-    (setq
-      *PMQ_maxpriority    32767
-      *PMQ_maxmsg         (in "/proc/sys/fs/mqueue/msg_default" (read))
-      *PMQ_msgsize        (in "/proc/sys/fs/mqueue/msgsize_default" (read))
-      *PMQ_os_msg_max     (in "/proc/sys/fs/mqueue/msg_max" (read))
-      *PMQ_os_msgsize_max (in "/proc/sys/fs/mqueue/msgsize_max" (read))
-      *PMQ_os_queues_max  (in "/proc/sys/fs/mqueue/queues_max" (read))
-      O_CLOEXEC           (hex "80000") ) )
-  ("FreeBSD"
-    (setq
-      *PMQ_maxpriority    63
-      *PMQ_maxmsg         10
-      *PMQ_msgsize        1024
-      *PMQ_os_msg_max     100
-      *PMQ_os_msgsize_max 16384
-      *PMQ_os_queues_max  256
-      O_CLOEXEC           (hex "100000") ]
+  *PMQ_verbose        T
+  *PMQ_maxpriority    32767 )
 
 ###
 # HELPERS
@@ -90,8 +71,8 @@
 (de pmq-open (Name Read Write Flags Mode Maxmsg Msgsize)
   (default Flags)
   (default Mode "0600")
-  (default Maxmsg *PMQ_maxmsg)
-  (default Msgsize *PMQ_msgsize)
+  (default Maxmsg (cdr (pmq-getsettings "msg_default")))
+  (default Msgsize (cdr (pmq-getsettings "msgsize_default")))
 
   (let (Type    (_pmq-get-type Read Write)
         Mem     (_pmq-mem 32)
@@ -162,6 +143,20 @@
     (_pmq-free Time)
 
     (_pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+
+(de pmq-getsettings (Setting)
+  (case Setting
+    ["msg_default"        (cons @ (in "/proc/sys/fs/mqueue/msg_default" (read) ]
+    ["msgsize_default"    (cons @ (in "/proc/sys/fs/mqueue/msgsize_default" (read) ]
+    ["msg_max"            (cons @ (in "/proc/sys/fs/mqueue/msg_max" (read) ]
+    ["msgsize_max"        (cons @ (in "/proc/sys/fs/mqueue/msgsize_max" (read) ]
+    ["queues_max"         (cons @ (in "/proc/sys/fs/mqueue/queues_max" (read) ]
+    [T  (list
+          (cons "msg_default"     (in "/proc/sys/fs/mqueue/msg_default" (read)))
+          (cons "msgsize_default" (in "/proc/sys/fs/mqueue/msgsize_default" (read)))
+          (cons "msg_max"         (in "/proc/sys/fs/mqueue/msg_max" (read)))
+          (cons "msgsize_max"     (in "/proc/sys/fs/mqueue/msgsize_max" (read)))
+          (cons "queues_max"      (in "/proc/sys/fs/mqueue/queues_max" (read))) ] ]
 
 ###
 # INITIALIZE
