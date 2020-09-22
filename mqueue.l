@@ -19,9 +19,9 @@
       *PMQ_maxpriority    32767
       *PMQ_maxmsg         (in "/proc/sys/fs/mqueue/msg_default" (read))
       *PMQ_msgsize        (in "/proc/sys/fs/mqueue/msgsize_default" (read))
-      *PMQ_os_msg_max     "/proc/sys/fs/mqueue/msg_max"
-      *PMQ_os_msgsize_max "/proc/sys/fs/mqueue/msgsize_max"
-      *PMQ_os_queues_max  "/proc/sys/fs/mqueue/queues_max"
+      *PMQ_os_msg_max     (in "/proc/sys/fs/mqueue/msg_max" (read))
+      *PMQ_os_msgsize_max (in "/proc/sys/fs/mqueue/msgsize_max" (read))
+      *PMQ_os_queues_max  (in "/proc/sys/fs/mqueue/queues_max" (read))
       O_CLOEXEC           (hex "80000") ) )
   ("FreeBSD"
     (setq

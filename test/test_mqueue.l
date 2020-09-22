@@ -36,9 +36,9 @@
     (assert-throws 'pmq-error "Permission denied" '(pmq-open "/___posixmq/tests1") "[OPEN] Throws: Permission denied when more than one slash '/' is given")
     (assert-throws 'pmq-error "File name too long" '(pmq-open (pack "/___posixmq" (need 255 "a"))) "[OPEN] Throws: File name too long if the queue name is too long")
     (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" -1 10) "[OPEN] Throws: Invalid argument if the Maxmsg is less than 0")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" (+ 1 (in *PMQ_os_msg_max (read))) 10) "[OPEN] Throws: Invalid argument if the Maxmsg is too large")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" (+ 1 *PMQ_os_msg_max) 10) "[OPEN] Throws: Invalid argument if the Maxmsg is too large")
     (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" 5 -1) "[OPEN] Throws: Invalid argument if the Msgsize is less than 0")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" 5 (+ 1 (in *PMQ_os_msgsize_max (read)))) "[OPEN] Throws: Invalid argument if the Msgsize is too large")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" 5 (+ 1 *PMQ_os_msgsize_max)) "[OPEN] Throws: Invalid argument if the Msgsize is too large")
     (assert-throws 'pmq-error "No such file or directory" '(pmq-open "/" T T (list O_CREAT) "0600") "[OPEN] Throws: No such file or directory when the only a slash '/' was given")
 
     (pmq-close Fd1)
@@ -46,10 +46,10 @@
     (pmq-unlink "/___posixmq-tests1")
     (pmq-unlink "/___posixmq-tests2")
 
-    (assert-throws 'pmq-error "Too many open files" '(for N (+ 1 (in *PMQ_os_msg_max (read))) (let Fd (pmq-open (pack "/___posixmq-tests-z" N) T T (list O_CREAT) "0600") (pmq-close Fd))) "[OPEN] Throws: Too many open files when there's too many queues with default attributes")
+    (assert-throws 'pmq-error "Too many open files" '(for N (+ 1 *PMQ_os_msg_max) (let Fd (pmq-open (pack "/___posixmq-tests-z" N) T T (list O_CREAT) "0600") (pmq-close Fd))) "[OPEN] Throws: Too many open files when there's too many queues with default attributes")
     (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-z" N)) (dir ".")) "rm" "-f") )
-    (assert-throws 'pmq-error "No space left on device" '(for N (+ 1 (in *PMQ_os_queues_max (read))) (let Fd (pmq-open (pack "/___posixmq-tests-x" N) T T (list O_CREAT O_EXCL) "0600" 4 20) (pmq-close Fd))) "[OPEN] Throws: No space left on device when there's too many queues")
+    (assert-throws 'pmq-error "No space left on device" '(for N (+ 1 *PMQ_os_queues_max) (let Fd (pmq-open (pack "/___posixmq-tests-x" N) T T (list O_CREAT O_EXCL) "0600" 4 20) (pmq-close Fd))) "[OPEN] Throws: No space left on device when there's too many queues")
     (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-x" N)) (dir ".")) "rm" "-f") )
   ]
