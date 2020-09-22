@@ -38,43 +38,49 @@
 ###
 
 # source: pil21.tgz 'lib.l'
-(de pmq-sysdefs ("Sym" "Alt")
+(de _pmq-sysdefs ("Sym" "Alt")
  (in "Alt"
     (if (from (pack "\n[" "Sym" "]\n"))
        (while (and (skip) (<> "[" @))
           (def (read) (read)) )
        (quit "No sysdefs" "Sym") ) ) )
 
-(de pmq-set-constants ()
-  (pmq-sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS))) )
+(de _pmq-set-constants ()
+  (_pmq-sysdefs "Posix Message Queues" (pack "sysdefs." (lowc *OS))) )
 
-(de pmq-output @
+(de _pmq-output @
   (when *PMQ_verbose (prinl "[" (dat$ (date) "-") "T" (tim$ (time) T) "] " (rest) ]
 
-(de pmq-error (Code Fun)
+(de _pmq-error (Code Fun)
   (let Msg (native "@" "strerror" 'S Code)
     (setq *Msg (cons Code Msg))
-    (pmq-output "Error '" Code "' in '(" Fun ")' - " Msg)
+    (_pmq-output "Error '" Code "' in '(" Fun ")' - " Msg)
     (throw 'pmq-error Msg) ]
 
-(de pmq-return (Code Res . @)
+(de _pmq-return (Code Res . @)
   (if (lt0 Code)
-      (pmq-error (errno) (car (up 2)))
-      (pmq-output (rest))
+      (_pmq-error (errno) (car (up 2)))
+      (_pmq-output (rest))
       Res ]
 
-# defaults to O_RDONLY
-(de pmq-get-type (Read Write)
+(de _pmq-get-timeout (Seconds)
+  (let (Mem     (_pmq-mem 16)
+        Timeout (+ Seconds (native "@" "time" 'N 0))
+        Time    (struct Mem 'N (cons Timeout 8) (0 . 8)) )
+
+    Mem ]
+
+(de _pmq-get-type (Read Write)
   (if Write
       (if Read
           O_RDWR
           O_WRONLY )
-      O_RDONLY ) )
+      O_RDONLY ) ) # default
 
-(de pmq-mem (Size)
+(de _pmq-mem (Size)
   (native "@" "malloc" 'N Size) )
 
-(de pmq-free (Buf)
+(de _pmq-free (Buf)
   (native "@" "free" NIL Buf) )
 
 ###
@@ -87,82 +93,78 @@
   (default Maxmsg *PMQ_maxmsg)
   (default Msgsize *PMQ_msgsize)
 
-  (let (Type    (pmq-get-type Read Write)
-        Mem     (pmq-mem 32)
+  (let (Type    (_pmq-get-type Read Write)
+        Mem     (_pmq-mem 32)
         Attr    (struct Mem 'N (0 . 8) (cons Maxmsg 8) (cons Msgsize 8) (0 . 8))
         Res     (native `*Librt "mq_open" 'I Name (apply | Flags Type) (oct Mode) Mem) )
 
-    (pmq-free Mem)
-    (pmq-return Res Res "Opened queue: Name='" Name "', FD=" Res) ]
+    (_pmq-free Mem)
+    (_pmq-return Res Res "Opened queue: Name='" Name "', FD=" Res) ]
 
 (de pmq-close (Fd)
   (let Res (native `*Librt "mq_close" 'I Fd)
-    (pmq-return Res Res "Closed queue: FD=" Fd) ]
+    (_pmq-return Res Res "Closed queue: FD=" Fd) ]
 
 (de pmq-unlink (Name)
   (let Res (native `*Librt "mq_unlink" 'I Name)
-    (pmq-return Res Res "Unlinked queue: Name='" Name "'") ]
+    (_pmq-return Res Res "Unlinked queue: Name='" Name "'") ]
 
 (de pmq-getattr (Fd)
   (use Attr
     (let Res (native `*Librt "mq_getattr" 'I Fd (list 'Attr (64 N . 4) 0))
-      (pmq-return Res Attr "Get attributes: Flags=" (car Attr) ", Maxmsg=" (; Attr 2) ", Msgsize=" (; Attr 3) ", Curmsgs=" (last Attr) ", FD=" Fd) ]
+      (_pmq-return Res Attr "Get attributes: Flags=" (car Attr) ", Maxmsg=" (; Attr 2) ", Msgsize=" (; Attr 3) ", Curmsgs=" (last Attr) ", FD=" Fd) ]
 
 (de pmq-setattr (Fd Nonblock)
-  (let (Mem     (pmq-mem 32)
+  (let (Mem     (_pmq-mem 32)
         Attr    (struct Mem 'N (cons (if Nonblock O_NONBLOCK 0) 8 . 0))
         Res     (native `*Librt "mq_setattr" 'I Fd Mem 0) )
 
-    (pmq-free Mem)
-    (pmq-return Res Attr "Set attributes: Nonblocking=" (if Nonblock "yes" "no") ", FD=" Fd) ]
+    (_pmq-free Mem)
+    (_pmq-return Res Attr "Set attributes: Nonblocking=" (if Nonblock "yes" "no") ", FD=" Fd) ]
 
 (de pmq-send (Fd Msg Prio)
   (default Prio 0)
 
   (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (size Msg) 1) Prio)
-    (pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
+    (_pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
 
 (de pmq-timedsend (Fd Msg Prio Seconds)
   (default Prio 0)
   (default Seconds 0)
 
-  (let (Mem     (pmq-mem 16)
-        Timeout (+ Seconds (native "@" "time" 'N 0))
-        Time    (struct Mem 'N (cons Timeout 8) (0 . 8))
-        Res     (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Mem) )
+  (let (Time    (_pmq-get-timeout Seconds)
+        Res     (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Time) )
 
-    (pmq-free Mem)
-    (pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
+    (_pmq-free Time)
+    (_pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
 
 (de pmq-receive (Fd)
   (let (Size    (caddr (pmq-getattr Fd))
-        Msg     (pmq-mem Size)
+        Msg     (_pmq-mem Size)
         Buf     (struct Msg 'S (0 . Size))
         Res     (native `*Librt "mq_receive" 'I Fd Msg Size 0)
         Str     (struct Msg 'S) )
 
-    (pmq-free Msg)
-    (pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+    (_pmq-free Msg)
+    (_pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
 
 (de pmq-timedreceive (Fd Seconds)
   (default Seconds 0)
 
   (let (Size    (caddr (pmq-getattr Fd))
-        Msg     (pmq-mem Size)
-        Mem     (pmq-mem 16)
+        Msg     (_pmq-mem Size)
         Buf     (struct Msg 'S (0 . Size))
-        Timeout (+ Seconds (native "@" "time" 'N 0))
-        Time    (struct Mem 'N (cons Timeout 8) (0 . 8))
-        Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Mem)
+        Time    (_pmq-get-timeout Seconds)
+        Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Time)
         Str     (struct Msg 'S) )
 
-    (pmq-free Msg)
-    (pmq-free Mem)
+    (_pmq-free Msg)
+    (_pmq-free Time)
 
-    (pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+    (_pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
 
 ###
 # INITIALIZE
 ###
 
-(pmq-set-constants)
+(_pmq-set-constants)

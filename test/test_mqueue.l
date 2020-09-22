@@ -13,9 +13,9 @@
   ]
 
 (de test-types ()
-  (assert-equal O_RDONLY (pmq-get-type) "[TYPES] Should validate the type to O_RDONLY (default)")
-  (assert-equal O_WRONLY (pmq-get-type NIL T) "[TYPES] Should validate the type to O_WRONLY")
-  (assert-equal O_RDWR (pmq-get-type T T) "[TYPES] Should validate the type to O_RDWR")
+  (assert-equal O_RDONLY (_pmq-get-type) "[TYPES] Should validate the type to O_RDONLY (default)")
+  (assert-equal O_WRONLY (_pmq-get-type NIL T) "[TYPES] Should validate the type to O_WRONLY")
+  (assert-equal O_RDWR (_pmq-get-type T T) "[TYPES] Should validate the type to O_RDWR")
   ]
 
 (de test-open ()
