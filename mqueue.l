@@ -94,46 +94,40 @@
     (_pmq-free Mem)
     (_pmq-return Res Res "Set attributes: Nonblocking=" (if Nonblock "yes" "no") ", FD=" Fd) ]
 
-(de pmq-send (Fd Msg Prio)
+(de pmq-send (Fd Msg Prio Seconds)
   (default Prio 0)
 
-  (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (size Msg) 1) Prio)
-    (_pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
+  (if Seconds
+      (let (Time  (_pmq-get-timeout Seconds)
+            Res   (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Time) )
 
-(de pmq-timedsend (Fd Msg Prio Seconds)
-  (default Prio 0)
-  (default Seconds 0)
+        (_pmq-free Time)
+        (_pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) )
 
-  (let (Time    (_pmq-get-timeout Seconds)
-        Res     (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Time) )
+      (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (size Msg) 1) Prio)
+        (_pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
 
-    (_pmq-free Time)
-    (_pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
-
-(de pmq-receive (Fd)
+(de pmq-receive (Fd Seconds)
   (let (Size    (caddr (pmq-getattr Fd))
         Msg     (_pmq-mem Size)
-        Buf     (struct Msg 'S (0 . Size))
-        Res     (native `*Librt "mq_receive" 'I Fd Msg Size 0)
-        Str     (struct Msg 'S) )
+        Buf     (struct Msg 'S (0 . Size)) )
 
-    (_pmq-free Msg)
-    (_pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+    (if Seconds
+        (let (Time    (_pmq-get-timeout Seconds)
+              Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Time)
+              Str     (struct Msg 'S) )
 
-(de pmq-timedreceive (Fd Seconds)
-  (default Seconds 0)
+          (_pmq-free Msg)
+          (_pmq-free Time)
 
-  (let (Size    (caddr (pmq-getattr Fd))
-        Msg     (_pmq-mem Size)
-        Buf     (struct Msg 'S (0 . Size))
-        Time    (_pmq-get-timeout Seconds)
-        Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Time)
-        Str     (struct Msg 'S) )
+          (_pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) )
 
-    (_pmq-free Msg)
-    (_pmq-free Time)
+        (let (Res     (native `*Librt "mq_receive" 'I Fd Msg Size 0)
+              Str     (struct Msg 'S) )
 
-    (_pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+          (_pmq-free Msg)
+          (_pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
+
 
 (de pmq-getsettings (Setting)
   (case Setting
