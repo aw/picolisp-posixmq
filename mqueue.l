@@ -97,37 +97,23 @@
 (de pmq-send (Fd Msg Prio Seconds)
   (default Prio 0)
 
-  (if Seconds
-      (let (Time  (_pmq-get-timeout Seconds)
-            Res   (native `*Librt "mq_timedsend" 'I Fd Msg (+ (size Msg) 1) Prio Time) )
+  (let (Time (when Seconds (_pmq-get-timeout Seconds))
+        Res  (native `*Librt (if Seconds "mq_timedsend" "mq_send") 'I Fd Msg (+ (size Msg) 1) Prio Time) )
 
-        (_pmq-free Time)
-        (_pmq-return Res Res "Timed send: String='" Msg "', Priority=" Prio ", FD=" Fd) )
-
-      (let Res (native `*Librt "mq_send" 'I Fd Msg (+ (size Msg) 1) Prio)
-        (_pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", FD=" Fd) ]
+    (when Seconds (_pmq-free Time))
+    (_pmq-return Res Res "Send: String='" Msg "', Priority=" Prio ", Seconds=" Seconds ", FD=" Fd) ]
 
 (de pmq-receive (Fd Seconds)
   (let (Size    (caddr (pmq-getattr Fd))
         Msg     (_pmq-mem Size)
-        Buf     (struct Msg 'S (0 . Size)) )
+        Buf     (struct Msg 'S (0 . Size))
+        Time    (when Seconds (_pmq-get-timeout Seconds))
+        Res     (native `*Librt (if Seconds "mq_timedreceive" "mq_receive") 'I Fd Msg Size 0 Time)
+        Str     (struct Msg 'S) )
 
-    (if Seconds
-        (let (Time    (_pmq-get-timeout Seconds)
-              Res     (native `*Librt "mq_timedreceive" 'I Fd Msg Size 0 Time)
-              Str     (struct Msg 'S) )
-
-          (_pmq-free Msg)
-          (_pmq-free Time)
-
-          (_pmq-return Res Str "Timed receive: String='" Str "' (" Res " Bytes), FD=" Fd) )
-
-        (let (Res     (native `*Librt "mq_receive" 'I Fd Msg Size 0)
-              Str     (struct Msg 'S) )
-
-          (_pmq-free Msg)
-          (_pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), FD=" Fd) ]
-
+    (_pmq-free Msg)
+    (when Seconds (_pmq-free Time))
+    (_pmq-return Res Str "Receive: String='" Str "' (" Res " Bytes), Seconds=" Seconds ", FD=" Fd) ]
 
 (de pmq-getsettings (Setting)
   (case Setting
@@ -136,12 +122,7 @@
     ["msg_max"            (cons @ (in "/proc/sys/fs/mqueue/msg_max" (read) ]
     ["msgsize_max"        (cons @ (in "/proc/sys/fs/mqueue/msgsize_max" (read) ]
     ["queues_max"         (cons @ (in "/proc/sys/fs/mqueue/queues_max" (read) ]
-    [T  (list
-          (cons "msg_default"     (in "/proc/sys/fs/mqueue/msg_default" (read)))
-          (cons "msgsize_default" (in "/proc/sys/fs/mqueue/msgsize_default" (read)))
-          (cons "msg_max"         (in "/proc/sys/fs/mqueue/msg_max" (read)))
-          (cons "msgsize_max"     (in "/proc/sys/fs/mqueue/msgsize_max" (read)))
-          (cons "queues_max"      (in "/proc/sys/fs/mqueue/queues_max" (read))) ] ]
+    (T  (mapcar pmq-getsettings '("msg_default" "msgsize_default" "msg_max" "msgsize_max" "queues_max") ]
 
 ###
 # INITIALIZE
