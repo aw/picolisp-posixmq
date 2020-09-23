@@ -50,13 +50,6 @@
 
     Mem ]
 
-(de _pmq-get-type (Read Write)
-  (if Write
-      (if Read
-          O_RDWR
-          O_WRONLY )
-      O_RDONLY ) ) # default
-
 (de _pmq-mem (Size)
   (native "@" "malloc" 'N Size) )
 
@@ -67,16 +60,15 @@
 # MQUEUE
 ###
 
-(de pmq-open (Name Read Write Flags Mode Maxmsg Msgsize)
-  (default Flags)
+(de pmq-open (Name Flags Mode Maxmsg Msgsize)
+  (default Flags (list O_RDONLY))
   (default Mode "0600")
   (default Maxmsg (cdr (pmq-getsettings "msg_default")))
   (default Msgsize (cdr (pmq-getsettings "msgsize_default")))
 
-  (let (Type    (_pmq-get-type Read Write)
-        Mem     (_pmq-mem 32)
+  (let (Mem     (_pmq-mem 32)
         Attr    (struct Mem 'N (0 . 8) (cons Maxmsg 8) (cons Msgsize 8) (0 . 8))
-        Res     (native `*Librt "mq_open" 'I Name (apply | Flags Type) (oct Mode) Mem) )
+        Res     (native `*Librt "mq_open" 'I Name (apply | Flags) (oct Mode) Mem) )
 
     (_pmq-free Mem)
     (_pmq-return Res Res "Opened queue: Name='" Name "', FD=" Res) ]
@@ -100,7 +92,7 @@
         Res     (native `*Librt "mq_setattr" 'I Fd Mem 0) )
 
     (_pmq-free Mem)
-    (_pmq-return Res Attr "Set attributes: Nonblocking=" (if Nonblock "yes" "no") ", FD=" Fd) ]
+    (_pmq-return Res Res "Set attributes: Nonblocking=" (if Nonblock "yes" "no") ", FD=" Fd) ]
 
 (de pmq-send (Fd Msg Prio)
   (default Prio 0)

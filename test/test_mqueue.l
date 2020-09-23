@@ -18,15 +18,9 @@
   (assert-kind-of 'Number O_NONBLOCK "[CONSTANTS] Should validate O_NONBLOCK is a number")
   ]
 
-(de test-types ()
-  (assert-equal O_RDONLY (_pmq-get-type) "[TYPES] Should validate the type to O_RDONLY (default)")
-  (assert-equal O_WRONLY (_pmq-get-type NIL T) "[TYPES] Should validate the type to O_WRONLY")
-  (assert-equal O_RDWR (_pmq-get-type T T) "[TYPES] Should validate the type to O_RDWR")
-  ]
-
 (de test-open ()
-  (let (Fd1 (pmq-open "/___posixmq-tests1" NIL NIL (list O_CREAT))
-        Fd2 (pmq-open "/___posixmq-tests2" T T (list O_CREAT O_NONBLOCK) "0600" 5 10)
+  (let (Fd1 (pmq-open "/___posixmq-tests1" (list O_RDONLY O_CREAT))
+        Fd2 (pmq-open "/___posixmq-tests2" (list O_RDWR O_CREAT O_NONBLOCK) "0600" 5 10)
         )
     (assert-kind-of 'Number Fd1 "[OPEN] Should validate 'open' returns a file descriptor")
     (assert-kind-of 'Number Fd2 "[OPEN] Should validate 'open' returns a file descriptor (with args)")
@@ -37,42 +31,42 @@
 
     (assert-throws 'pmq-error "Invalid argument" '(pmq-open "invalid-name") "[OPEN] Throws: Invalid argument when the name is invalid")
     (assert-throws 'pmq-error "No such file or directory" '(pmq-open "/___posixmq-tests3") "[OPEN] Throws: No such file or directory when O_CREAT is not given")
-    (assert-throws 'pmq-error "File exists" '(pmq-open "/___posixmq-tests1" T T (list O_CREAT O_EXCL)) "[OPEN] Throws: File exists when O_CREAT and O_EXCL are given")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests1" T T (list 9000000)) "[OPEN] Throws: Invalid argument when the flags are invalid")
+    (assert-throws 'pmq-error "File exists" '(pmq-open "/___posixmq-tests1" (list O_RDWR O_CREAT O_EXCL)) "[OPEN] Throws: File exists when O_CREAT and O_EXCL are given")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests1" (list O_RDWR 9000000)) "[OPEN] Throws: Invalid argument when the flags are invalid")
     (assert-throws 'pmq-error "Permission denied" '(pmq-open "/___posixmq/tests1") "[OPEN] Throws: Permission denied when more than one slash '/' is given")
     (assert-throws 'pmq-error "File name too long" '(pmq-open (pack "/___posixmq" (need 255 "a"))) "[OPEN] Throws: File name too long if the queue name is too long")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" -1 10) "[OPEN] Throws: Invalid argument if the Maxmsg is less than 0")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" (+ 1 *PMQ_os_msg_max) 10) "[OPEN] Throws: Invalid argument if the Maxmsg is too large")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" 5 -1) "[OPEN] Throws: Invalid argument if the Msgsize is less than 0")
-    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" T T (list O_CREAT) "0600" 5 (+ 1 *PMQ_os_msgsize_max)) "[OPEN] Throws: Invalid argument if the Msgsize is too large")
-    (assert-throws 'pmq-error "No such file or directory" '(pmq-open "/" T T (list O_CREAT) "0600") "[OPEN] Throws: No such file or directory when the only a slash '/' was given")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" (list O_RDWR O_CREAT) "0600" -1 10) "[OPEN] Throws: Invalid argument if the Maxmsg is less than 0")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" (list O_RDWR O_CREAT) "0600" (+ 1 *PMQ_os_msg_max) 10) "[OPEN] Throws: Invalid argument if the Maxmsg is too large")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" (list O_RDWR O_CREAT) "0600" 5 -1) "[OPEN] Throws: Invalid argument if the Msgsize is less than 0")
+    (assert-throws 'pmq-error "Invalid argument" '(pmq-open "/___posixmq-tests3" (list O_RDWR O_CREAT) "0600" 5 (+ 1 *PMQ_os_msgsize_max)) "[OPEN] Throws: Invalid argument if the Msgsize is too large")
+    (assert-throws 'pmq-error "No such file or directory" '(pmq-open "/" (list O_RDWR O_CREAT) "0600") "[OPEN] Throws: No such file or directory when the only a slash '/' was given")
 
     (pmq-close Fd1)
     (pmq-close Fd2)
     (pmq-unlink "/___posixmq-tests1")
     (pmq-unlink "/___posixmq-tests2")
 
-    (assert-throws 'pmq-error "Too many open files" '(for N (+ 1 *PMQ_os_msg_max) (let Fd (pmq-open (pack "/___posixmq-tests-z" N) T T (list O_CREAT) "0600") (pmq-close Fd))) "[OPEN] Throws: Too many open files when there's too many queues with default attributes")
+    (assert-throws 'pmq-error "Too many open files" '(for N (+ 1 *PMQ_os_msg_max) (let Fd (pmq-open (pack "/___posixmq-tests-z" N) (list O_RDWR O_CREAT) "0600") (pmq-close Fd))) "[OPEN] Throws: Too many open files when there's too many queues with default attributes")
     (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-z" N)) (dir ".")) "rm" "-f") )
-    (assert-throws 'pmq-error "No space left on device" '(for N (+ 1 *PMQ_os_queues_max) (let Fd (pmq-open (pack "/___posixmq-tests-x" N) T T (list O_CREAT O_EXCL) "0600" 4 20) (pmq-close Fd))) "[OPEN] Throws: No space left on device when there's too many queues")
+    (assert-throws 'pmq-error "No space left on device" '(for N (+ 1 *PMQ_os_queues_max) (let Fd (pmq-open (pack "/___posixmq-tests-x" N) (list O_RDWR O_CREAT O_EXCL) "0600" 4 20) (pmq-close Fd))) "[OPEN] Throws: No space left on device when there's too many queues")
     (chdir "/dev/mqueue/"
       (apply call (filter '((N) (pre? "___posixmq-tests-x" N)) (dir ".")) "rm" "-f") )
   ]
 
 (de test-close ()
-  (assert-kind-of 'Number (let Fd (pmq-open "/___posixmq-tests1" T T (list O_CREAT)) (pmq-close Fd)) "[CLOSE] Should validate 'close' returns a success code")
+  (assert-kind-of 'Number (let Fd (pmq-open "/___posixmq-tests1" (list O_RDWR O_CREAT)) (pmq-close Fd)) "[CLOSE] Should validate 'close' returns a success code")
   (assert-throws 'pmq-error "Bad file descriptor" '(pmq-close 100000) "[CLOSE] Throws: Bad file descriptor when the FD is invalid")
   ]
 
 (de test-unlink ()
-  (assert-kind-of 'Number (let Fd (pmq-open "/___posixmq-tests1" T T (list O_CREAT)) (pmq-close Fd) (pmq-unlink "/___posixmq-tests1")) "[UNLINK] Should validate 'unlink' returns a success code")
+  (assert-kind-of 'Number (let Fd (pmq-open "/___posixmq-tests1" (list O_RDWR O_CREAT)) (pmq-close Fd) (pmq-unlink "/___posixmq-tests1")) "[UNLINK] Should validate 'unlink' returns a success code")
   (assert-throws 'pmq-error "No such file or directory" '(pmq-unlink "/") "[UNLINK] Throws: No such file or directory when the queue name doesn't exist")
   (assert-throws 'pmq-error "File name too long" '(pmq-unlink (pack "/___posixmq" (need 255 "a"))) "[UNLINK] Throws: File name too long when the queue name is too long")
   ]
 
 (de test-getattr ()
-  (let Fd (pmq-open "/___posixmq-tests1" NIL T (list O_CREAT))
+  (let Fd (pmq-open "/___posixmq-tests1" (list O_WRONLY O_CREAT))
     (assert-equal (0 10 8192 0) (pmq-getattr Fd) "[GETATTR] Should validate 'getattr' has no messages on the queue")
     (pmq-send Fd "hello world" 5)
     (assert-equal (0 10 8192 1) (pmq-getattr Fd) "[GETATTR] Should validate 'getattr' has a new message on the queue")
@@ -83,7 +77,7 @@
   ]
 
 (de test-setattr ()
-  (let Fd (pmq-open "/___posixmq-tests1" NIL T (list O_CREAT))
+  (let Fd (pmq-open "/___posixmq-tests1" (list O_WRONLY O_CREAT))
     (assert-equal (0 10 8192 0) (and (pmq-setattr Fd) (pmq-getattr Fd)) "[SETATTR] Should validate 'setattr' disables Nonblocking")
     (assert-equal (list O_NONBLOCK 10 8192 0) (and (pmq-setattr Fd T) (pmq-getattr Fd)) "[SETATTR] Should validate 'setattr' enables Nonblocking")
     (assert-equal (0 10 8192 0) (and (pmq-setattr Fd) (pmq-getattr Fd)) "[SETATTR] Should validate 'setattr' disables Nonblocking (again)")
@@ -94,7 +88,7 @@
   ]
 
 (de test-send ()
-  (let Fd (pmq-open "/___posixmq-tests4" T T (list O_CREAT))
+  (let Fd (pmq-open "/___posixmq-tests4" (list O_RDWR O_CREAT))
     (assert-kind-of 'Number (pmq-send Fd "hello world" 15) "[SEND] Should validate 'send' returns (number)")
     (assert-equal 0 (pmq-send Fd "testing 1" 5) "[SEND] Should validate 'send' returns (testing 1)")
     (assert-equal 0 (pmq-send Fd) "[SEND] Should validate 'send' returns 0 (empty message)")
@@ -122,7 +116,7 @@
   ]
 
 (de test-receive ()
-  (let Fd (pmq-open "/___posixmq-tests5" T T (list O_CREAT))
+  (let Fd (pmq-open "/___posixmq-tests5" (list O_RDWR O_CREAT))
     (pmq-send Fd "hello world" 15)
     (pmq-send Fd "testing 1" 5)
     (pmq-send Fd)
@@ -157,7 +151,6 @@
       (apply call (filter '((N) (pre? "___posixmq-tests" N)) (dir ".")) "rm" "-f") ) # cleanup first
     (execute
       '(test-constants)
-      '(test-types)
       '(test-open)
       '(test-close)
       '(test-unlink)
