@@ -47,7 +47,6 @@
   (let (Mem     (_pmq-mem 16)
         Timeout (+ Seconds (native "@" "time" 'N 0))
         Time    (struct Mem 'N (cons Timeout 8) (0 . 8)) )
-
     Mem ]
 
 (de _pmq-mem (Size)
@@ -83,7 +82,7 @@
 
 (de pmq-getattr (Fd)
   (use Attr
-    (let Res (native `*Librt "mq_getattr" 'I Fd (list 'Attr (64 N . 4) 0))
+    (let Res (native `*Librt "mq_getattr" 'I Fd (list 'Attr (64 N . 4) . 0))
       (_pmq-return Res Attr "Get attributes: Flags=" (car Attr) ", Maxmsg=" (; Attr 2) ", Msgsize=" (; Attr 3) ", Curmsgs=" (last Attr) ", FD=" Fd) ]
 
 (de pmq-setattr (Fd Nonblock)
