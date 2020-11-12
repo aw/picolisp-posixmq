@@ -1,6 +1,6 @@
 # POSIX Message Queues: Tutorials
 
-This document provides some guides **for beginners** to get started using this library.
+This document provides some guides to **get started** using this library.
 
 In these tutorials, you will learn how to get up and running, as well as how to perform basic tasks with this library.
 
@@ -63,6 +63,8 @@ Ensure you're running 64-bit PicoLisp newer than `v17.12`, or `pil21`
 # should display something like '20.7.16'
 pil -version -bye
 ```
+
+If you don't have PicoLisp installed, get it from here: [picolisp download](https://software-lab.de/down.html)
 
 ### Check your kernel
 

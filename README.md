@@ -61,7 +61,7 @@ The code below illustrates how to use the queue for sending and receiving a mess
 
 Additional usage and reference documentation can be found in [docs/](docs/)
 
-  * [TUTORIALS](docs/TUTORIALS.md): some guides **for beginners** to get started using this library
+  * [TUTORIALS](docs/TUTORIALS.md): some guides to **get started** using this library
   * [HOWTO](docs/HOWTO.md): a set of recipes for performing more advanced tasks with this library
   * [EXPLAIN](docs/EXPLAIN.md): an explanation of some key concepts, including how this library works
   * [REFERENCE](docs/REFERENCE.md): technical information on the internals of this library

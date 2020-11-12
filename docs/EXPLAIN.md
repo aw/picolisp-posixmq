@@ -64,7 +64,7 @@ On Linux, certain OS settings must be tweaked to increase limits, such as the ma
 
 Now that you understand how all this works, feel free to read the other documents below:
 
-  * [TUTORIALS](TUTORIALS.md): some guides **for beginners** to get started using this library
+  * [TUTORIALS](docs/TUTORIALS.md): some guides to **get started** using this library
   * [HOWTO](HOWTO.md): a set of recipes for performing more advanced tasks with this library
   * [REFERENCE](REFERENCE.md): technical information on the internals of this library
 

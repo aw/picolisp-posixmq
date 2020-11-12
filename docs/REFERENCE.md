@@ -614,7 +614,7 @@ This example output tries to receive a message from a non-blocking queue which d
 
 Now that you've read the entire technical reference, feel free to read the other documents below:
 
-  * [TUTORIALS](TUTORIALS.md): some guides **for beginners** to get started using this library
+  * [TUTORIALS](docs/TUTORIALS.md): some guides to **get started** using this library
   * [HOWTO](HOWTO.md): a set of recipes for performing more advanced tasks with this library
   * [EXPLAIN](EXPLAIN.md): an explanation of some key concepts, including how this library works
 
