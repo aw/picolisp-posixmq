@@ -24,7 +24,7 @@ This library makes it simple to embed support for _POSIX Message Queues_ in [Pic
 
 The first step is to run the unit tests: `make check`
 
-If those fail, jump to the [TUTORIALS](docs/TUTORIALS.md) section to perform the initial setup and and system check.
+If those fail, jump to the [TUTORIALS](docs/TUTORIALS.md) section to perform the initial setup and system check.
 
 If all works well, then your system is ready to use this library.
 
